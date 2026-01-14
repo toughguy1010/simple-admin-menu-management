@@ -34,9 +34,9 @@
 }
 
 .samh-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 30px;
 }
 
@@ -55,6 +55,44 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 15px;
+}
+
+.samh-menu-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0; /* Allow text truncation if needed */
+}
+
+.samh-menu-header-right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.samh-drag-handle {
+  cursor: move;
+  color: #a7aaad;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+.samh-drag-handle:hover {
+  color: #2271b1;
+  background: #f0f6fc;
+}
+
+.samh-sortable-placeholder {
+  border: 2px dashed #2271b1;
+  background: #f0f6fc;
+  border-radius: 8px;
+  height: 60px;
+  margin-bottom: 10px;
 }
 
 /* Accordion Styles */

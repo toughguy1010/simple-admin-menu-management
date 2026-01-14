@@ -1,14 +1,14 @@
 <?php
 
 /**
- * Plugin Name: Simple Admin Menu Hider
+ * Plugin Name: Admin Sidebar Menu Manager
  * Plugin URI:  https://example.com
- * Description: A simple plugin to hide admin menu items.
- * Version:     1.0.0
+ * Description: Manage your admin sidebar menu - reorder items with drag & drop and hide/show menus and submenus.
+ * Version:     1.2.0
  * Author:      Duc Pham
  * Author URI:  https://example.com
  * License:     GPLv2 or later
- * Text Domain: simple-admin-menu-hider
+ * Text Domain: simple-admin-menu-management
  */
 
 if (! defined('ABSPATH')) {
@@ -16,7 +16,7 @@ if (! defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SAMH_VERSION', '1.0.0');
+define('SAMH_VERSION', '1.2.0');
 define('SAMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SAMH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
@@ -24,6 +24,24 @@ define('SAMH_PLUGIN_URL', plugin_dir_url(__FILE__));
 require_once SAMH_PLUGIN_DIR . 'includes/settings-page.php';
 // Include error page
 require_once SAMH_PLUGIN_DIR . 'includes/error-page.php';
+
+// Activation hook - migrate settings if plugin was renamed
+register_activation_hook(__FILE__, 'samh_activation_migrate_settings');
+
+function samh_activation_migrate_settings()
+{
+	// Check if settings already exist (fresh install)
+	$existing_menus = get_option('samh_hidden_menus', null);
+	$existing_submenus = get_option('samh_hidden_submenus', null);
+	$existing_order = get_option('samh_menu_order', null);
+
+	// If no settings exist yet, this is likely a fresh activation
+	// Settings are already preserved in the database with the same option names
+	// No migration needed since we're keeping the same option keys
+
+	// Optional: Set a flag to indicate plugin has been activated
+	update_option('samh_plugin_activated', true);
+}
 
 // Global to store all menus before they are hidden
 global $samh_all_menus, $samh_all_submenus;
@@ -35,11 +53,11 @@ $samh_all_submenus = array();
  */
 function samh_enqueue_scripts($hook)
 {
-	if ('settings_page_simple-admin-menu-hider' !== $hook) {
+	if ('settings_page_simple-admin-menu-management' !== $hook) {
 		return;
 	}
 	wp_enqueue_style('samh-admin-style', SAMH_PLUGIN_URL . 'assets/css/admin-style.css', array(), SAMH_VERSION);
-	wp_enqueue_script('samh-admin-script', SAMH_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), SAMH_VERSION, true);
+	wp_enqueue_script('samh-admin-script', SAMH_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery', 'jquery-ui-sortable'), SAMH_VERSION, true);
 }
 add_action('admin_enqueue_scripts', 'samh_enqueue_scripts');
 
@@ -69,6 +87,38 @@ function samh_remove_menus()
 		}
 	}
 
+	// Apply Menu Order
+	$menu_order = get_option('samh_menu_order', array());
+	if (! empty($menu_order) && is_array($menu_order) && ! empty($menu) && is_array($menu)) {
+		$new_menu = array();
+		$menu_items_map = array(); // Map slug => item for quick lookup
+
+		// 1. Index existing menu items by slug
+		foreach ($menu as $priority => $item) {
+			if (empty($item[2])) continue;
+			$menu_items_map[$item[2]] = $item;
+		}
+
+		// 2. Build new menu based on saved order
+		$priority_counter = 1;
+		foreach ($menu_order as $slug) {
+			if (isset($menu_items_map[$slug])) {
+				$new_menu[$priority_counter++] = $menu_items_map[$slug];
+				unset($menu_items_map[$slug]); // Remove so we know what's left
+			}
+		}
+
+		// 3. Append remaining items (plugins added after saving order)
+		foreach ($menu_items_map as $slug => $item) {
+			$new_menu[$priority_counter++] = $item;
+		}
+
+		// 4. Override global menu
+		// Ensure we don't lose the global separator structure if we decide to keep them,
+		// but typically a reorder replaces the structure.
+		$menu = $new_menu;
+	}
+
 	// Remove Submenus
 	$hidden_submenus = get_option('samh_hidden_submenus', array());
 	if (! empty($hidden_submenus) && is_array($hidden_submenus)) {
@@ -95,7 +145,7 @@ function samh_restrict_access()
 	}
 
 	// Do not restrict our own settings page just in case
-	if (isset($_GET['page']) && 'simple-admin-menu-hider' === $_GET['page']) {
+	if (isset($_GET['page']) && 'simple-admin-menu-management' === $_GET['page']) {
 		return;
 	}
 

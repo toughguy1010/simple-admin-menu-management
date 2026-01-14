@@ -15,7 +15,7 @@ function samh_render_error_page()
     }
 
     $admin_url = admin_url();
-    $plugin_settings_url = admin_url('options-general.php?page=simple-admin-menu-hider');
+    $plugin_settings_url = admin_url('options-general.php?page=simple-admin-menu-management');
 
     // Check capability
     $capability = defined('SAMH_CAPABILITY') ? SAMH_CAPABILITY : 'manage_options';
@@ -28,7 +28,7 @@ function samh_render_error_page()
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title><?php _e('Access Restricted', 'simple-admin-menu-hider'); ?></title>
+        <title><?php _e('Access Restricted', 'simple-admin-menu-management'); ?></title>
         <link rel="stylesheet" href="<?php echo SAMH_PLUGIN_URL . 'assets/css/error-page.css?ver=' . time(); ?>">
     </head>
 
@@ -40,25 +40,25 @@ function samh_render_error_page()
                 </svg>
             </div>
 
-            <h1><?php _e('Module Hidden', 'simple-admin-menu-hider'); ?></h1>
+            <h1><?php _e('Module Hidden', 'simple-admin-menu-management'); ?></h1>
             <p>
-                <?php _e('This menu item has been hidden by the <strong>Simple Admin Menu Hider</strong> plugin.', 'simple-admin-menu-hider'); ?>
+                <?php _e('This menu item has been hidden by the <strong>Admin Sidebar Menu Manager</strong> plugin.', 'simple-admin-menu-management'); ?>
             </p>
 
             <?php if (! $is_admin) : ?>
                 <div class="samh-warning">
-                    <?php _e('Please contact your administrator to request access.', 'simple-admin-menu-hider'); ?>
+                    <?php _e('Please contact your administrator to request access.', 'simple-admin-menu-management'); ?>
                 </div>
             <?php endif; ?>
 
             <a href="<?php echo esc_url($admin_url); ?>" class="button">
-                <?php _e('Go to Dashboard', 'simple-admin-menu-hider'); ?>
+                <?php _e('Go to Dashboard', 'simple-admin-menu-management'); ?>
             </a>
 
             <?php if ($is_admin) : ?>
                 <div class="footer-link">
                     <?php printf(
-                        __('Configured via <a href="%s">Simple Admin Menu Hider</a>', 'simple-admin-menu-hider'),
+                        __('Configured via <a href="%s">Menu Manager</a>', 'simple-admin-menu-management'),
                         esc_url($plugin_settings_url)
                     ); ?>
                 </div>
