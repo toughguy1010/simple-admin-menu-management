@@ -1,0 +1,32 @@
+# OS generated files
+.DS_Store
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Composer
+vendor/
+composer.lock
+
+# WordPress
+*.log
+wp-config.php
+wp-content/uploads/
+
+# Build
+dist/
+build/
+*.zip
