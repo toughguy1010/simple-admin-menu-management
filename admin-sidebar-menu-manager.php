@@ -25,6 +25,23 @@ require_once SAMH_PLUGIN_DIR . 'includes/settings-page.php';
 // Include error page
 require_once SAMH_PLUGIN_DIR . 'includes/error-page.php';
 
+// Include Plugin Update Checker
+require_once SAMH_PLUGIN_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
+
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+	'https://github.com/toughguy1010/simple-admin-menu-management/',
+	__FILE__,
+	'admin-sidebar-menu-manager'
+);
+
+// Set the branch that contains the stable release.
+$myUpdateChecker->setBranch('master');
+
+// Optional: If your GitHub repo is private, set an access token.
+// $myUpdateChecker->setAuthentication('your-token-here');
+
 // Activation hook - migrate settings if plugin was renamed
 register_activation_hook(__FILE__, 'samh_activation_migrate_settings');
 

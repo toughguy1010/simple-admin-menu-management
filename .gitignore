@@ -30,3 +30,6 @@ wp-content/uploads/
 dist/
 build/
 *.zip
+
+# Library (don't ignore - needed for updates)
+# lib/plugin-update-checker/
