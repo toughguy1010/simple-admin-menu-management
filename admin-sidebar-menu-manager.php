@@ -39,6 +39,13 @@ $myUpdateChecker = PucFactory::buildUpdateChecker(
 // Set the branch that contains the stable release.
 $myUpdateChecker->setBranch('master');
 
+// Enable debug mode (shows detailed info in Dashboard -> Updates)
+add_action('plugins_loaded', function () {
+	if (current_user_can('update_core')) {
+		add_filter('puc_manual_final_check-admin-sidebar-menu-manager', '__return_true');
+	}
+});
+
 // Optional: If your GitHub repo is private, set an access token.
 // $myUpdateChecker->setAuthentication('your-token-here');
 
