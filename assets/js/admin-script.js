@@ -1,7 +1,6 @@
 jQuery(document).ready(function ($) {
   // Accordion Toggle
   $(".samh-menu-header").on("click", function (e) {
-    // Did we click the toggle switch or drag handle? If so, don't expand/collapse
     if (
       $(e.target).closest(".samh-toggle").length ||
       $(e.target).closest(".samh-drag-handle").length
@@ -37,5 +36,38 @@ jQuery(document).ready(function ($) {
       }
     });
     $("#samh_menu_order").val(order.join(","));
+  }
+
+  // Submenu Sortable
+  $(".samh-submenu-list").sortable({
+    items: ".samh-submenu-item",
+    handle: ".samh-submenu-drag-handle",
+    placeholder: "samh-sortable-placeholder", // Reusing placeholder style
+    update: function (event, ui) {
+      updateSubmenuOrder();
+    },
+  });
+
+  function updateSubmenuOrder() {
+    var submenuOrder = {};
+    $(".samh-submenu-list").each(function () {
+      var $parentItem = $(this).closest(".samh-menu-item");
+      var parentSlug = $parentItem.data("slug");
+      var subSlugs = [];
+
+      $(this)
+        .find(".samh-submenu-item")
+        .each(function () {
+          var slug = $(this).data("slug");
+          if (slug) {
+            subSlugs.push(slug);
+          }
+        });
+
+      if (parentSlug && subSlugs.length > 0) {
+        submenuOrder[parentSlug] = subSlugs;
+      }
+    });
+    $("#samh_submenu_order").val(JSON.stringify(submenuOrder));
   }
 });

@@ -4,7 +4,7 @@
  * Plugin Name: Admin Sidebar Menu Manager
  * Plugin URI:  https://example.com
  * Description: Manage your admin sidebar menu - reorder items with drag & drop and hide/show menus and submenus.
- * Version:     1.2.0
+ * Version:     1.4.1
  * Author:      Duc Pham
  * Author URI:  https://example.com
  * License:     GPLv2 or later
@@ -16,38 +16,16 @@ if (! defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('SAMH_VERSION', '1.2.0');
+define('SAMH_VERSION', '1.4.1');
 define('SAMH_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('SAMH_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-// Include settings page
-require_once SAMH_PLUGIN_DIR . 'includes/settings-page.php';
+// Include settings controller
+require_once SAMH_PLUGIN_DIR . 'includes/settings-controller.php';
 // Include error page
 require_once SAMH_PLUGIN_DIR . 'includes/error-page.php';
 
-// Include Plugin Update Checker
-require_once SAMH_PLUGIN_DIR . 'lib/plugin-update-checker/plugin-update-checker.php';
 
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
-
-$myUpdateChecker = PucFactory::buildUpdateChecker(
-	'https://github.com/toughguy1010/simple-admin-menu-management/',
-	__FILE__,
-	'admin-sidebar-menu-manager'
-);
-
-// Set the branch that contains the stable release.
-$myUpdateChecker->setBranch('master');
-
-// Enable debug mode (shows detailed info in Dashboard -> Updates)
-add_action('plugins_loaded', function () {
-	if (current_user_can('update_core')) {
-		add_filter('puc_manual_final_check-admin-sidebar-menu-manager', '__return_true');
-	}
-});
-
-// Optional: If your GitHub repo is private, set an access token.
-// $myUpdateChecker->setAuthentication('your-token-here');
 
 // Activation hook - migrate settings if plugin was renamed
 register_activation_hook(__FILE__, 'samh_activation_migrate_settings');
@@ -85,17 +63,16 @@ function samh_enqueue_scripts($hook)
 }
 add_action('admin_enqueue_scripts', 'samh_enqueue_scripts');
 
-// Hook to remove menus (Priority PHP_INT_MAX ensures we run last)
+// Hook to remove menus
 add_action('admin_menu', 'samh_remove_menus', PHP_INT_MAX);
 
 /**
- * Capture all menus and then remove selected ones.
+ * Capture all menus and remove selected ones.
  */
 function samh_remove_menus()
 {
 	global $menu, $submenu, $samh_all_menus, $samh_all_submenus;
 
-	// Capture menus exactly as they are right before we start removing things
 	if (isset($menu) && is_array($menu)) {
 		$samh_all_menus = $menu;
 	}
@@ -103,7 +80,7 @@ function samh_remove_menus()
 		$samh_all_submenus = $submenu;
 	}
 
-	// Remove Top Level Menus
+	// Hide Menus
 	$hidden_menus = get_option('samh_hidden_menus', array());
 	if (! empty($hidden_menus) && is_array($hidden_menus)) {
 		foreach ($hidden_menus as $menu_slug) {
@@ -115,32 +92,57 @@ function samh_remove_menus()
 	$menu_order = get_option('samh_menu_order', array());
 	if (! empty($menu_order) && is_array($menu_order) && ! empty($menu) && is_array($menu)) {
 		$new_menu = array();
-		$menu_items_map = array(); // Map slug => item for quick lookup
+		$menu_items_map = array();
 
-		// 1. Index existing menu items by slug
 		foreach ($menu as $priority => $item) {
 			if (empty($item[2])) continue;
 			$menu_items_map[$item[2]] = $item;
 		}
 
-		// 2. Build new menu based on saved order
 		$priority_counter = 1;
 		foreach ($menu_order as $slug) {
 			if (isset($menu_items_map[$slug])) {
 				$new_menu[$priority_counter++] = $menu_items_map[$slug];
-				unset($menu_items_map[$slug]); // Remove so we know what's left
+				unset($menu_items_map[$slug]);
 			}
 		}
 
-		// 3. Append remaining items (plugins added after saving order)
 		foreach ($menu_items_map as $slug => $item) {
 			$new_menu[$priority_counter++] = $item;
 		}
 
-		// 4. Override global menu
-		// Ensure we don't lose the global separator structure if we decide to keep them,
-		// but typically a reorder replaces the structure.
 		$menu = $new_menu;
+	}
+
+	// Apply Submenu Order
+	$submenu_order = get_option('samh_submenu_order', array());
+	if (! empty($submenu_order) && is_array($submenu_order) && ! empty($submenu) && is_array($submenu)) {
+		foreach ($submenu_order as $parent_slug => $ordered_subs) {
+			if (isset($submenu[$parent_slug]) && is_array($submenu[$parent_slug])) {
+				$current_subs = $submenu[$parent_slug];
+				$new_subs = array();
+				$sub_map = array();
+
+				foreach ($current_subs as $index => $item) {
+					if (isset($item[2])) {
+						$sub_map[$item[2]] = $item;
+					}
+				}
+
+				foreach ($ordered_subs as $sub_slug) {
+					if (isset($sub_map[$sub_slug])) {
+						$new_subs[] = $sub_map[$sub_slug];
+						unset($sub_map[$sub_slug]);
+					}
+				}
+
+				foreach ($sub_map as $item) {
+					$new_subs[] = $item;
+				}
+
+				$submenu[$parent_slug] = $new_subs;
+			}
+		}
 	}
 
 	// Remove Submenus
@@ -201,36 +203,32 @@ function samh_restrict_access()
 
 	// Check against all hidden slugs
 	foreach ($all_hidden_slugs as $menu_slug) {
-		// Case 1: Standard PHP file match (e.g. tools.php)
+		// Exact match
 		if ($menu_slug === $pagenow) {
-			// Special handling for edit.php (Posts) to avoid blocking other post types (Pages, etc.)
 			if ('edit.php' === $pagenow) {
 				$post_type = isset($_GET['post_type']) ? $_GET['post_type'] : 'post';
 				if ('post' === $post_type) {
 					samh_render_error_page();
 				}
 			} else {
-				// For all other pages, strict pagenow match is usually sufficient
 				samh_render_error_page();
 			}
 		}
 
-		// Case 2: Plugin page match (e.g. page=my-plugin)
+		// Plugin page match
 		if (isset($_GET['page']) && $menu_slug === $_GET['page']) {
 			samh_render_error_page();
 		}
 
-		// Case 3: Menu slug with query parameters (e.g. edit.php?post_type=page)
+		// Query parameter match
 		if (strpos($menu_slug, '?') !== false) {
 			$parts = parse_url($menu_slug);
 			$path = isset($parts['path']) ? $parts['path'] : '';
 			$query = isset($parts['query']) ? $parts['query'] : '';
 
-			// If the base file matches the current page
 			if ($path === $pagenow && ! empty($query)) {
 				parse_str($query, $query_vars);
 				$match = true;
-				// Check if all params in the menu slug are present in current $_GET
 				foreach ($query_vars as $key => $value) {
 					if (! isset($_GET[$key]) || $_GET[$key] !== $value) {
 						$match = false;

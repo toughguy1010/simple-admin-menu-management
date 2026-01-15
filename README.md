@@ -33,12 +33,19 @@ A powerful yet lightweight WordPress plugin to fully manage your admin sidebar m
 
 ## Changelog
 
+### 1.4.0
+
+- Improved icon compatibility (support for Flatsome and others)
+- Dark mode UI for icon containers
+- Removed Admin Bar Manager feature (focused on Sidebar)
+- Removed external update checker (WP.org compliant)
+- Refactored codebase (MVC structure)
+
 ### 1.2.0
 
 - Added drag and drop menu reordering
 - Rebranded to "Admin Sidebar Menu Manager"
 - Improved UI with vertical list layout
-- Enhanced drag handle with hover effects
 
 ### 1.0.0
 
